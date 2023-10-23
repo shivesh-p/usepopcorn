@@ -1,4 +1,5 @@
 import { useState } from "react";
+import StarRating from "./stars";
 
 const tempMovieData = [
   {
@@ -54,7 +55,6 @@ function Nav({ children }) {
   return (
     <nav className="nav-bar">
       <Logo></Logo>
-
       {children}
     </nav>
   );
