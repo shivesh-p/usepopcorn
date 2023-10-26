@@ -34,8 +34,9 @@ export default function StarRating({
     size: `${size / 1.5}px`,
   };
   function handleRating(ratingNew) {
-    setrating((prevRating) => (prevRating = ratingNew));
-    onSetRating(rating);
+    debugger;
+    setrating(ratingNew);
+    onSetRating(ratingNew);
   }
 
   const [rating, setrating] = useState(defaultRating);
