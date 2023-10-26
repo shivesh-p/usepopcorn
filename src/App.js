@@ -72,6 +72,7 @@ export default function App() {
   const [isError, setisError] = useState("");
   const [selectedId, setselectedId] = useState(null);
 
+  const controller = new AbortController();
   function handleSelectedMovie(movieId) {
     setselectedId((selectedId) => (selectedId === movieId ? null : movieId));
   }
@@ -85,20 +86,26 @@ export default function App() {
     setWatched((watched) => watched.filter((t) => t.imdbId !== id));
   }
 
+  //close the selected movie on escape key press
+
   useEffect(() => {
     async function fetchMovies(param) {
       try {
         debugger;
         setIsLoading(true);
         setisError("");
-        const result = await fetch(`${url}s=${query}`);
+        const result = await fetch(`${url}s=${query}`, {
+          signal: controller.signal,
+        });
         if (!result.ok) throw new Error("Failed to fetch the movies list 🙅");
         const moviesJson = await result.json();
         if (moviesJson.Response === "False")
           throw new Error("Failed to find the movie you were searching for 🤷‍♂️");
         setMovies(moviesJson.Search);
+        setisError("");
       } catch (error) {
-        setisError(error.message);
+        //console.error(error);
+        if (error.name !== "AbortError") setisError(error.message);
       } finally {
         setIsLoading(false);
       }
@@ -111,6 +118,9 @@ export default function App() {
     }
 
     fetchMovies();
+    return function () {
+      controller.abort();
+    };
   }, [query]);
 
   return (
@@ -190,6 +200,17 @@ function MovieDetails({
   } = selectedMovie;
 
   useEffect(() => {
+    document.addEventListener("keydown", (e) => {
+      if (e.code === "Escape") removeSelectedMovie();
+    });
+    return function () {
+      document.removeEventListener("keydown", (e) => {
+        if (e.code === "Escape") removeSelectedMovie();
+      });
+    };
+  }, [removeSelectedMovie]);
+
+  useEffect(() => {
     async function fetchMoviesDetails() {
       try {
         debugger;
@@ -209,12 +230,19 @@ function MovieDetails({
       setSelectedMovie({});
       setIsLoading(false);
     }
+    //close the movie detail for a new movie search
+    removeSelectedMovie();
     fetchMoviesDetails();
-  }, [selectedId]);
+  }, [selectedId, removeSelectedMovie]);
 
   useEffect(() => {
     if (!title) return;
     document.title = `Movie | ${title}`;
+    //cleanup fucntion that runs on each re render and on unmount cleans up the side
+    //effects of the prev effect
+    return function () {
+      document.title = "usePopCorn";
+    };
   }, [title]);
 
   function handleAdd() {
