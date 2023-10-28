@@ -1,4 +1,4 @@
-import { useRef, useEffect } from "react";
+import { useRef } from "react";
 import { useKeyPress } from "./useKeyPress";
 
 export default function Search({ query, onSetQuery }) {
