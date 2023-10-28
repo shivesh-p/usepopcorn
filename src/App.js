@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import StarRating from "./stars";
 import PropTypes from "prop-types";
 import NumberOfResults from "./NumberOfResults";
@@ -67,7 +67,14 @@ export default function App() {
   const [query, setQuery] = useState("");
 
   const [movies, setMovies] = useState([]);
-  const [watched, setWatched] = useState([]);
+  //without lazy intialization
+  //const [watched, setWatched] = useState([]);
+
+  const [watched, setWatched] = useState(function () {
+    const watchedData = localStorage.getItem("watched");
+    return JSON.parse(watchedData);
+  });
+
   const [isLoading, setIsLoading] = useState(false);
   const [isError, setisError] = useState("");
   const [selectedId, setselectedId] = useState(null);
@@ -116,13 +123,16 @@ export default function App() {
       setMovies([]);
       return;
     }
-
+    removedSelectedMovie();
     fetchMovies();
     return function () {
       controller.abort();
     };
   }, [query]);
 
+  useEffect(() => {
+    localStorage.setItem("watched", JSON.stringify(watched));
+  }, [watched]);
   return (
     <>
       <Nav>
@@ -179,12 +189,19 @@ function MovieDetails({
   onAddWatched,
   watchedMovies,
 }) {
+  debugger;
   const [isLoading, setIsLoading] = useState(false);
   const [selectedMovie, setSelectedMovie] = useState({});
   const [userRating, setuserRating] = useState("");
   const isWatched = watchedMovies
     .map((movie) => movie.imdbId)
     .includes(selectedId);
+
+  /**we are trying to create a ref here for persisting data between states */
+  const counterRef = useRef(0);
+  useEffect(() => {
+    if (userRating) counterRef.current += 1;
+  }, [userRating]);
   //destructuring with alias
   const {
     Title: title,
@@ -231,7 +248,6 @@ function MovieDetails({
       setIsLoading(false);
     }
     //close the movie detail for a new movie search
-    removeSelectedMovie();
     fetchMoviesDetails();
   }, [selectedId, removeSelectedMovie]);
 
@@ -254,6 +270,7 @@ function MovieDetails({
       year,
       userRating,
       runtime: +runtime.split(" ").at(0),
+      userRatingDecision: counterRef.current,
     };
     onAddWatched(newMovie);
     removeSelectedMovie();
