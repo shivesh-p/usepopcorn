@@ -1,19 +1,13 @@
 import { useRef, useEffect } from "react";
+import { useKeyPress } from "./useKeyPress";
 
 export default function Search({ query, onSetQuery }) {
   const inputEl = useRef(null);
-
-  useEffect(() => {
-    function callbackEvent(e) {
-      if (document.activeElement === inputEl.current) return;
-      if (e.code === "Enter") {
-        inputEl.current.focus();
-        onSetQuery("");
-      }
-    }
-    document.addEventListener("keydown", callbackEvent);
-    return () => document.removeEventListener("keydown", callbackEvent);
-  }, [onSetQuery]);
+  useKeyPress("Enter", function () {
+    if (document.activeElement === inputEl.current) return;
+    inputEl.current.focus();
+    onSetQuery("");
+  });
   return (
     <input
       className="search"

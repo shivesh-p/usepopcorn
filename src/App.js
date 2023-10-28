@@ -11,6 +11,9 @@ import Box from "./Box";
 import WatchedSummary from "./WatchedSummary";
 import WatchedMovieList from "./WatchedMovieList";
 import MovieList from "./MovieList";
+import { useMovies } from "./useMovies";
+import { useLocalStorage } from "./useLocalStorage";
+import { useKeyPress } from "./useKeyPress";
 
 // const tempMovieData = [
 //   {
@@ -58,28 +61,18 @@ import MovieList from "./MovieList";
 //     userRating: 9,
 //   },
 // ];
-
-//const KEY = "f84fc31d";
 const KEY = "e1e74423";
 const url = `http://www.omdbapi.com/?apikey=${KEY}&`;
 
 export default function App() {
   const [query, setQuery] = useState("");
-
-  const [movies, setMovies] = useState([]);
+  const { movies, isLoading, isError } = useMovies(query, removedSelectedMovie);
   //without lazy intialization
   //const [watched, setWatched] = useState([]);
+  const [watched, setWatched] = useLocalStorage([], "watched");
 
-  const [watched, setWatched] = useState(function () {
-    const watchedData = localStorage.getItem("watched");
-    return JSON.parse(watchedData);
-  });
-
-  const [isLoading, setIsLoading] = useState(false);
-  const [isError, setisError] = useState("");
   const [selectedId, setselectedId] = useState(null);
 
-  const controller = new AbortController();
   function handleSelectedMovie(movieId) {
     setselectedId((selectedId) => (selectedId === movieId ? null : movieId));
   }
@@ -93,46 +86,6 @@ export default function App() {
     setWatched((watched) => watched.filter((t) => t.imdbId !== id));
   }
 
-  //close the selected movie on escape key press
-
-  useEffect(() => {
-    async function fetchMovies(param) {
-      try {
-        debugger;
-        setIsLoading(true);
-        setisError("");
-        const result = await fetch(`${url}s=${query}`, {
-          signal: controller.signal,
-        });
-        if (!result.ok) throw new Error("Failed to fetch the movies list 🙅");
-        const moviesJson = await result.json();
-        if (moviesJson.Response === "False")
-          throw new Error("Failed to find the movie you were searching for 🤷‍♂️");
-        setMovies(moviesJson.Search);
-        setisError("");
-      } catch (error) {
-        //console.error(error);
-        if (error.name !== "AbortError") setisError(error.message);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    if (query.length < 3) {
-      setisError("");
-      setMovies([]);
-      return;
-    }
-    removedSelectedMovie();
-    fetchMovies();
-    return function () {
-      controller.abort();
-    };
-  }, [query]);
-
-  useEffect(() => {
-    localStorage.setItem("watched", JSON.stringify(watched));
-  }, [watched]);
   return (
     <>
       <Nav>
@@ -216,17 +169,7 @@ function MovieDetails({
     Genre: genre,
   } = selectedMovie;
 
-  useEffect(() => {
-    document.addEventListener("keydown", (e) => {
-      if (e.code === "Escape") removeSelectedMovie();
-    });
-    return function () {
-      document.removeEventListener("keydown", (e) => {
-        if (e.code === "Escape") removeSelectedMovie();
-      });
-    };
-  }, [removeSelectedMovie]);
-
+  useKeyPress("Escape", removeSelectedMovie);
   useEffect(() => {
     async function fetchMoviesDetails() {
       try {
